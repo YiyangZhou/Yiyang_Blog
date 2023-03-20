@@ -146,8 +146,44 @@
 <p>​        MultiInstruct: Improving Multi-Modal Zero-Shot Learning via Instruction Tuning </p>
 <p>​        Prompting Large Language Models with Answer Heuristics for Knowledge-based Visual Question Answering (Prophet) [✅]</p>
 <h2 id="2-文献阅读笔记"><a href="#2-文献阅读笔记" class="headerlink" title="2.文献阅读笔记"></a>2.文献阅读笔记</h2><h3 id="2-1-Prophet"><a href="#2-1-Prophet" class="headerlink" title="2.1.Prophet"></a>2.1.Prophet</h3><blockquote>
-<p>本文指出早期用外部知识库来引导回答图片问题，外部知识的一些无关信息可能会造成误导。本文提出了用一VQA模型生成一系列针对图片的指导信息，然后用这些构造成prompt去指导文本GPT生成答案。</p>
+<p>本文指出早期用外部知识库来引导回答图片问题KB-VQA任务，外部知识的一些无关信息可能会造成误导。本文提出了用VQA模型生成一系列针对图片的指导信息，然后用这些构造成prompt去指导文本GPT生成答案。</p>
 </blockquote>
+<p><strong>Introduction</strong></p>
+<p>这部分指出传统的KB-VQA任务会存在两个问题：</p>
+<p>（1）所需的知识可能无法从kb中成功检索</p>
+<p>（2）即使检索到所需的知识，也不可避免地引入大量无关的知识</p>
+<p>但是也会有像PICa这类模型用caption model去获取图片的caption，然后用得到的caption和一些固定格式的promt输入GPT-3去得到答案。</p>
+<blockquote>
+<p>本文说上述两种方法都有缺陷：</p>
+<p>（1）PICa的方法用的caption model可能并不会得到关于问题的信息：</p>
+<p>eg.</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230320170146043.png" >
+        </sapn>
+      </p>
+<p>这张图中caption并不会注意到椰子树，如果用这个caption组合，然后问：图中的树会长什么果子？这样会有问题。</p>
+<p>（2）在给到一个任务给GPT-3时候，它依赖上下文，所以上下文例子选择至关重要。</p>
+</blockquote>
+<p>Prophet的上下文策略文中叫做answer heuristics，有两种形式：1.answer candidates. 2.answer-aware examples.</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230320171429176.png" >
+        </sapn>
+      </p>
+<p><strong>Framework</strong></p>
+<p>整个模型是两阶段</p>
+<p>（1）第一阶段：训练一个VQA模型获得两种形式的answer heuristics</p>
+<p>（2）第二阶段：在启发式增强的提示阶段，answer heuristics和caption被集成到一个格式化的提示中，以指导GPT-3预测一个答案</p>
+<p>整个模型如下：</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230320172053320.png" >
+        </sapn>
+      </p>
 
         <!-- 分类文章 -->
         

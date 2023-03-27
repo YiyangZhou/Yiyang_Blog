@@ -145,6 +145,8 @@
 <p>​        GIT: A Generative Image-to-text Transformer for Vision and Language</p>
 <p>​        MultiInstruct: Improving Multi-Modal Zero-Shot Learning via Instruction Tuning </p>
 <p>​        Prompting Large Language Models with Answer Heuristics for Knowledge-based Visual Question Answering (Prophet) [✅]</p>
+<p>​        Language Is Not All You Need: Aligning Perception with Language Models (KOSMOS-1) [✅]</p>
+<p>​        Visual ChatGPT: Talking, Drawing and Editing with Visual Foundation Models (Visual ChatGPT) [✅]</p>
 <h2 id="2-文献阅读笔记"><a href="#2-文献阅读笔记" class="headerlink" title="2.文献阅读笔记"></a>2.文献阅读笔记</h2><h3 id="2-1-Prophet"><a href="#2-1-Prophet" class="headerlink" title="2.1.Prophet"></a>2.1.Prophet</h3><blockquote>
 <p>本文指出早期用外部知识库来引导回答图片问题KB-VQA任务，外部知识的一些无关信息可能会造成误导。本文提出了用VQA模型生成一系列针对图片的指导信息，然后用这些构造成prompt去指导文本GPT生成答案。</p>
 </blockquote>
@@ -189,6 +191,29 @@
         <span class="lazyload-img-span">
         <img   
            data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230320172053320.png" >
+        </sapn>
+      </p>
+<h3 id="2-2-MM-React"><a href="#2-2-MM-React" class="headerlink" title="2.2.MM-React"></a>2.2.MM-React</h3><blockquote>
+<p>MM-React的prompt设计利于LLM接受多模态信息。本文注重于利用单独的视觉模型和LLM分离的让LLM理解图像。</p>
+</blockquote>
+<p><strong>Introduction</strong></p>
+<p>这部分指出：</p>
+<p>​    很多工作是多模态融合，类似于Flamingo和PaLM-E等，这种模型效果好但计算贵。</p>
+<p>MM-React输入图片等非文本模态的数据的使用直接采用PATH，相当于告诉语言模型这有个占位符。</p>
+<p><strong>Framework</strong></p>
+<p>不同的视觉模型提供不同的信息，例如：目标检测，OCR，实体命名模型。MM-React的目的是根据用户以自然语言查询提供的需求来自动化这个过程。</p>
+<p>整个框架如下：</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230327110743308.png" >
+        </sapn>
+      </p>
+<p>gpt在系统中的一个思考流程：</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230327112631996.png" >
         </sapn>
       </p>
 

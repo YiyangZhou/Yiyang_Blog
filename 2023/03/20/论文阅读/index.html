@@ -176,6 +176,13 @@
 <p><strong>Framework</strong></p>
 <p>整个模型是两阶段</p>
 <p>（1）第一阶段：训练一个VQA模型获得两种形式的answer heuristics</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230324163841914.png" >
+        </sapn>
+      </p>
+<p>​        其中answer-aware examples的选择是通过上述式子计算出融合模态表征同其他样本融合表征的相似度，因为融合后的表征相似度高，他们所在的潜在答案空间重叠就高，然后选取相似度最高的N个做为上下文answer-aware examples。</p>
 <p>（2）第二阶段：在启发式增强的提示阶段，answer heuristics和caption被集成到一个格式化的提示中，以指导GPT-3预测一个答案</p>
 <p>整个模型如下：</p>
 <p>

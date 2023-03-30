@@ -137,6 +137,7 @@
 <p>​        Finetuned Language Models Are Zero-Shot Learners (FLAN) [✅]</p>
 <p>​        Multitask Prompted Training Enables Zero-Shot Task Generalization (T0) [✅]</p>
 <p>​        Scaling Instruction-Finetuned Language Models (Flan-PaLM) [✅]</p>
+<p>​        SELF-INSTRUCT: Aligning Language Model with Self Generated Instructions (SELF-INSTRUCT) [✅]</p>
 <p><strong>大模型+对话</strong></p>
 <p>​        Training language models to follow instructions with human feedback (InstructGPT) [✅]</p>
 <hr>
@@ -218,6 +219,23 @@
            data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230327112631996.png" >
         </sapn>
       </p>
+<h3 id="2-3-Self-Instruct"><a href="#2-3-Self-Instruct" class="headerlink" title="2.3.Self-Instruct"></a>2.3.Self-Instruct</h3><blockquote>
+<p>现在的instruction-tuned llm能力不错，但是人工标注费时费力且质量多样性不高，所以本文提出self-instruct，让模型自己指导自己遵循指令。</p>
+</blockquote>
+<p><strong>Introduction</strong></p>
+<p>人工撰写instruct数据集缺乏多样性，偏向于热门的NLP任务，没有涵盖真正的各种任务和不同的方式来描述它们。考虑到这些限制，要继续提高指令调优模型的质量，就需要进行开发替代方法。</p>
+<p>self-instruct的整个流程是一个自我提高算法，从一个人工的instruction小数据集开始，指导自己整个生成过程。在第一阶段中，将提示模型为新任务生成指令。这一步利用现有的指令集合来创建更广泛的指令来定义( 通常是新的)任务。给定新生成的指令集，该框架还为它们创建输入-输出实例，稍后可以用于监督指令调优。最后，用各种措施来删除低质量和重复的指令。这个过程可以重复进行许多交互，直到完成大量的任务。</p>
+<p><strong>Framework</strong></p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230330104229062.png" >
+        </sapn>
+      </p>
+<p><strong>Limitation</strong></p>
+<p>(1) Tail Phenomena</p>
+<p>(2) Dependence on large models</p>
+<p>(3) Reinforcing LM biases</p>
 
         <!-- 分类文章 -->
         

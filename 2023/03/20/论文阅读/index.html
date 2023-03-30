@@ -236,6 +236,32 @@
 <p>(1) Tail Phenomena</p>
 <p>(2) Dependence on large models</p>
 <p>(3) Reinforcing LM biases</p>
+<h3 id="2-4-REVIVE"><a href="#2-4-REVIVE" class="headerlink" title="2.4.REVIVE"></a>2.4.REVIVE</h3><blockquote>
+<p>本文提出现有的很多kbVQA方法存在两个问题（1）关注整个视觉，或者滑动窗口检索，忽视了region对于vqa任务的重要性（2）没有很好利用视觉模态特征。本文提出的REVIVE说明了这些region信息的重要性，主要利用显示的检索信息和region信息。</p>
+</blockquote>
+<p><strong>Introduction</strong></p>
+<p>现有工作聚焦于整合外部knowledge，本文侧重于视觉一侧聚焦region对于vqa任务的重要性。</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230330142210728.png" >
+        </sapn>
+      </p>
+<p><strong>Framework</strong></p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230330142645321.png" >
+        </sapn>
+      </p>
+<p>整体来说首先搜集了四种信息：</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230330144541446.png" >
+        </sapn>
+      </p>
+<p>region视觉信息，box信息描述方位，和box的tag信息，以及caption用于描述物体的关系（感觉很有道理这个caption）。</p>
 
         <!-- 分类文章 -->
         

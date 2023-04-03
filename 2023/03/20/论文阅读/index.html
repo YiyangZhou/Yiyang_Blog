@@ -151,6 +151,8 @@
 <p>​        Visual ChatGPT: Talking, Drawing and Editing with Visual Foundation Models (Visual ChatGPT) [✅]</p>
 <p>​        MM-REACT: Prompting ChatGPT for Multimodal Reasoning and Action (MM-REACT) [✅]</p>
 <p>​        REVIVE: Regional Visual Representation Matters in Knowledge-Based Visual Question Answering (REVIVE) [✅]</p>
+<p>​        An Empirical Study of GPT-3 for Few-Shot Knowledge-Based VQA (PICa) [✅]</p>
+<p>​        MULTIINSTRUCT: Improving Multi-Modal Zero-Shot Learning via Instruction Tuning (MultiInstruct) [✅]</p>
 <h2 id="2-文献阅读笔记"><a href="#2-文献阅读笔记" class="headerlink" title="2.文献阅读笔记"></a>2.文献阅读笔记</h2><h3 id="2-1-Prophet"><a href="#2-1-Prophet" class="headerlink" title="2.1.Prophet"></a>2.1.Prophet</h3><blockquote>
 <p>本文指出早期用外部知识库来引导回答图片问题KB-VQA任务，外部知识的一些无关信息可能会造成误导。本文提出了用VQA模型生成一系列针对图片的指导信息，然后用这些构造成prompt去指导文本GPT生成答案。</p>
 </blockquote>
@@ -276,6 +278,24 @@
         <span class="lazyload-img-span">
         <img   
            data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230330145902576.png" >
+        </sapn>
+      </p>
+<h3 id="2-5-MultiInstruct"><a href="#2-5-MultiInstruct" class="headerlink" title="2.5.MultiInstruct"></a>2.5.MultiInstruct</h3><blockquote>
+<p>在这项工作中，作者介绍了多指令，第一个由多模态指令调整基准数据集组成的多模态指令调整基准数据集，模式任务涵盖11个大类别。每个任务至少设计了5000个来自现有开源数据集的实例（输入输出对）和5个专家编写的指令。文中还设计了一个新的评估度量-敏感度，以评估模型对各种指令的敏感性。</p>
+</blockquote>
+<p><strong>Instruct</strong></p>
+<p>每条实例被组织成统一的序列到序列格式，其中输入文本、图像、指令和边界框在相同的标记空间中表示。</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230403100351129.png" >
+        </sapn>
+      </p>
+<p><strong>MultiInstruct</strong></p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230403101401642.png" >
         </sapn>
       </p>
 

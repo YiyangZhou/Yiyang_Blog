@@ -132,6 +132,17 @@
 <p>训练：8张v100</p>
 <figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> /nas-alinlp/yiyang.zyy/alpaca-lora</span><br><span class="line"><span class="built_in">source</span> activate /nas-alinlp/yiyang.zyy/conda_envs/envs/alpaca</span><br><span class="line">WORLD_SIZE=8 CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 torchrun --nproc_per_node=8 \</span><br><span class="line">--master_port=1234 finetune.py \</span><br><span class="line">--base_model <span class="string">&#x27;decapoda-research/llama-7b-hf&#x27;</span> \</span><br><span class="line">--data_path <span class="string">&#x27;/nas-alinlp/yiyang.zyy/alpaca-lora/trans_chinese_alpaca_data.json&#x27;</span> \</span><br><span class="line">--output_dir <span class="string">&#x27;./lora-alpaca-zh&#x27;</span></span><br></pre></td></tr></table></figure>
 
+<blockquote>
+<p>遇到一个坑：原始代码finetune使用int8量化会导致loss起飞，必须改掉</p>
+<p>在finetune.py中去掉model = prepare_model_for_int8_training(model)这行，并且将load_in_8bit=False，这样设置后loss就正常了。</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230413110118797.png" >
+        </sapn>
+      </p>
+</blockquote>
+<h2 id="2-进展"><a href="#2-进展" class="headerlink" title="2.进展"></a>2.进展</h2><p>[✅] finetuning alpaca with lora on 中文alpaca json data</p>
 
         <!-- 分类文章 -->
         
@@ -139,7 +150,7 @@
       <div class="post-content-inner-space">
         
           <div class="space-toc-main animate__animated  animate__fadeInUp">
-            <ol class="space-toc"><li class="space-toc-item space-toc-level-2"><a class="space-toc-link" href="#1-%E6%90%AD%E5%BB%BA%E6%AD%A5%E9%AA%A4"><span class="space-toc-text">1.搭建步骤</span></a></li></ol>
+            <ol class="space-toc"><li class="space-toc-item space-toc-level-2"><a class="space-toc-link" href="#1-%E6%90%AD%E5%BB%BA%E6%AD%A5%E9%AA%A4"><span class="space-toc-text">1.搭建步骤</span></a></li><li class="space-toc-item space-toc-level-2"><a class="space-toc-link" href="#2-%E8%BF%9B%E5%B1%95"><span class="space-toc-text">2.进展</span></a></li></ol>
            </div>
         
       </div>

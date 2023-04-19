@@ -115,11 +115,31 @@
       <div class="post-content-main animate__animated  animate__fadeInUp">
         <!-- top型目录 -->
         
-        
+        <h1 id="多模态模型评测调研"><a href="#多模态模型评测调研" class="headerlink" title="多模态模型评测调研"></a>多模态模型评测调研</h1><h2 id="1-纯文本"><a href="#1-纯文本" class="headerlink" title="1.纯文本"></a>1.纯文本</h2><p>Holistic Evaluation of Language Models（HELM）一文对大语言模型整体评估</p>
+<blockquote>
+<p>HELM是一种语言模型整体评估方法，旨在提高语言模型的透明度和可靠性。该方法将潜在场景和感兴趣的指标进行分类，并采用多指标方法对各种核心场景进行测量，以确保模型和指标之间的折衷关系得到清晰的暴露。同时，该方法对30个知名的语言模型进行了大规模评估，覆盖了所有42个场景，并展示了25个重要的发现。为了完全透明，HELM公开了所有原始模型输入提示和输出生成，并提供了一个通用的模块化工具包，方便添加新的场景、模型、指标和提示策略。</p>
+</blockquote>
+<p>但是，整体评估语言模型意味着什么呢？语言模型是通用的文本接口，可以应用于广泛的场景。对于每个场景，我们可能有一套广泛的期望：模型应该准确、稳健、公平、高效等。事实上，这些期望的相对重要性通常不仅取决于个人的观点和价值观，还取决于场景本身（例如，在移动应用中，推理效率可能更为重要）。</p>
+<p><strong>Academic Benchmarks</strong></p>
+<p>子任务：</p>
+<p>Bias: Winogender、CrowS Pairs、Real Toxicity</p>
+<p>QA：Truthful QA、DROP、QuAC、SquadV2、Hellaswag</p>
+<p>Summarization：TLDR Summarization、CNN/DM Summarization</p>
+<p>Translation：WMT Fr → En 15</p>
+<p>Entailment：RTE</p>
+<p>Sentiment：SST</p>
+<p>Synthetic：WSC (Winograd Schema Challenge</p>
+<p>评测方法：</p>
+<p>Automatic Evaluations（ACC/F1/BLEU/Rouge）</p>
+
         <!-- 分类文章 -->
         
       </div>
       <div class="post-content-inner-space">
+        
+          <div class="space-toc-main animate__animated  animate__fadeInUp">
+            <ol class="space-toc"><li class="space-toc-item space-toc-level-2"><a class="space-toc-link" href="#1-%E7%BA%AF%E6%96%87%E6%9C%AC"><span class="space-toc-text">1.纯文本</span></a></li></ol>
+           </div>
         
       </div>
    </div>

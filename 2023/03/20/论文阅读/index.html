@@ -154,6 +154,7 @@
 <p>​        REVIVE: Regional Visual Representation Matters in Knowledge-Based Visual Question Answering (REVIVE) [✅]</p>
 <p>​        An Empirical Study of GPT-3 for Few-Shot Knowledge-Based VQA (PICa) [✅]</p>
 <p>​        MULTIINSTRUCT: Improving Multi-Modal Zero-Shot Learning via Instruction Tuning (MultiInstruct) [✅]</p>
+<p>​        MiniGPT-4:Enhancing Vision-Language Understanding with Advanced Large Language Models (MiniGPT-4) [✅]</p>
 <h2 id="2-文献阅读笔记"><a href="#2-文献阅读笔记" class="headerlink" title="2.文献阅读笔记"></a>2.文献阅读笔记</h2><h3 id="2-1-Prophet"><a href="#2-1-Prophet" class="headerlink" title="2.1.Prophet"></a>2.1.Prophet</h3><blockquote>
 <p>本文指出早期用外部知识库来引导回答图片问题KB-VQA任务，外部知识的一些无关信息可能会造成误导。本文提出了用VQA模型生成一系列针对图片的指导信息，然后用这些构造成prompt去指导文本GPT生成答案。</p>
 </blockquote>
@@ -284,7 +285,7 @@
 <h3 id="2-5-MultiInstruct"><a href="#2-5-MultiInstruct" class="headerlink" title="2.5.MultiInstruct"></a>2.5.MultiInstruct</h3><blockquote>
 <p>在这项工作中，作者介绍了多指令，第一个由多模态指令调整基准数据集组成的多模态指令调整基准数据集，模式任务涵盖11个大类别。每个任务至少设计了5000个来自现有开源数据集的实例（输入输出对）和5个专家编写的指令。文中还设计了一个新的评估度量-敏感度，以评估模型对各种指令的敏感性。</p>
 </blockquote>
-<p><strong>Instruct</strong></p>
+<p><strong>Introduction</strong></p>
 <p>每条实例被组织成统一的序列到序列格式，其中输入文本、图像、指令和边界框在相同的标记空间中表示。</p>
 <p>
         <span class="lazyload-img-span">
@@ -299,6 +300,16 @@
            data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230403101401642.png" >
         </sapn>
       </p>
+<h3 id="2-6-MiniGPT-4"><a href="#2-6-MiniGPT-4" class="headerlink" title="2.6.MiniGPT-4"></a>2.6.MiniGPT-4</h3><blockquote>
+<p>本文认为gpt4得益于使用了更先进的语言模型，本文提出了MiniGPT-4，它使用一个投影层将一个冻结的视觉编码器与一个冻结的LLM（Vicuna）对齐。整个模型只用了大约500万对图像-文本对和额外的3500个精选的高质量对进行投影层的训练。</p>
+</blockquote>
+<p><strong>Introduction</strong></p>
+<p>本文主要认为gpt4的超强能力都源于一个强大的LLM，文本端是Vicuna视觉端是ViT-G/14和Q-Former。MiniGPT-4只添加了一个投影层，以将编码的视觉特征与Vicuna语言模型对齐，并冻结了所有其他的视觉和语言组件。</p>
+<p>MiniGPT-4先用基本的图文对数据来train，使得文本图像端能对齐，然后用3500高质量pairs+自定模版来激发能力。</p>
+<p>本文证明了：</p>
+<p>​    （1）我们的研究表明，通过将视觉特征与先进的大型语言模型Vicuna相结合，我们可以实现突发的视觉语言能力。我们证明了我们的MiniGPT-4可以推进 与GPT-4演示中展示的能力相似。</p>
+<p>​    （2）仅仅训练一个投影层就可以有效地进行训练 y将视觉特征与大型语言模型对齐。</p>
+<p>​    （3）公开数据质量低，不足以对齐，得加入一些超高质量数据。</p>
 
         <!-- 分类文章 -->
         

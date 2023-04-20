@@ -155,6 +155,7 @@
 <p>​        An Empirical Study of GPT-3 for Few-Shot Knowledge-Based VQA (PICa) [✅]</p>
 <p>​        MULTIINSTRUCT: Improving Multi-Modal Zero-Shot Learning via Instruction Tuning (MultiInstruct) [✅]</p>
 <p>​        MiniGPT-4:Enhancing Vision-Language Understanding with Advanced Large Language Models (MiniGPT-4) [✅]</p>
+<p>​        Visual Instruction Tuning (LLaVa) [✅]</p>
 <h2 id="2-文献阅读笔记"><a href="#2-文献阅读笔记" class="headerlink" title="2.文献阅读笔记"></a>2.文献阅读笔记</h2><h3 id="2-1-Prophet"><a href="#2-1-Prophet" class="headerlink" title="2.1.Prophet"></a>2.1.Prophet</h3><blockquote>
 <p>本文指出早期用外部知识库来引导回答图片问题KB-VQA任务，外部知识的一些无关信息可能会造成误导。本文提出了用VQA模型生成一系列针对图片的指导信息，然后用这些构造成prompt去指导文本GPT生成答案。</p>
 </blockquote>
@@ -310,6 +311,45 @@
 <p>​    （1）我们的研究表明，通过将视觉特征与先进的大型语言模型Vicuna相结合，我们可以实现突发的视觉语言能力。我们证明了我们的MiniGPT-4可以推进 与GPT-4演示中展示的能力相似。</p>
 <p>​    （2）仅仅训练一个投影层就可以有效地进行训练 y将视觉特征与大型语言模型对齐。</p>
 <p>​    （3）公开数据质量低，不足以对齐，得加入一些超高质量数据。</p>
+<p><strong>Framework</strong></p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230420134831112.png" >
+        </sapn>
+      </p>
+<p>本文说图文对预训练（这里的预训练只训练mlp），minigpt4能有能力但是语言不完整，常常生成碎片化的重复的东西。我们还注意到，在GPT-3中也面临着类似的问题。尽管在广泛的语言数据集上进行了预训练，GPT-3仍然不能直接生成与用户的意图一致的语言输出，需要微调解决。</p>
+<p>第一阶段：</p>
+<p>图文对预训练，SBU和LAION</p>
+<p>第二阶段：</p>
+<p>用高质量数据集来微调，高质量图文对主要体现为文本的高质量</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230420135801654.png" >
+        </sapn>
+      </p>
+<p>它采用prompt一次判断句子长度是否超出80tokens，如果超出则保存，否则加一个下面的prompt，把两次的句子连起来，这样得到5000个图文对。</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230420141256875.png" >
+        </sapn>
+      </p>
+<p>然后又人工筛选出里面质量最高的3500条。</p>
+<p>然后根据格式：</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230420141441097.png" >
+        </sapn>
+      </p>
+<p>进行二阶段训练。</p>
+<p><strong>Limitations</strong></p>
+<p>感知能力不足。MiniGPT-4的视觉感知仍然有限。它可能难以从图像中识别详细的文本信息，并区分空间定位。可能源于以下几个因素：</p>
+<p>1)缺乏足够的对齐图像-文本数据，其中包含足够的信息，如空间定位和光学字符注释。这个问题可以通过对更一致和丰富的数据的训练来缓解</p>
+<p>2)还有就是说整体匹配的视觉端就像Q-fomer和clip的vit这种会丢失很多视觉信息</p>
+<p>3)只训练一个投影层可能无法提供足够的能力来学习广泛的视觉-文本对齐</p>
 
         <!-- 分类文章 -->
         

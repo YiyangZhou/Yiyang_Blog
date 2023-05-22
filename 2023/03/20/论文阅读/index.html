@@ -352,7 +352,35 @@
 <p>1)缺乏足够的对齐图像-文本数据，其中包含足够的信息，如空间定位和光学字符注释。这个问题可以通过对更一致和丰富的数据的训练来缓解</p>
 <p>2)还有就是说整体匹配的视觉端就像Q-fomer和clip的vit这种会丢失很多视觉信息</p>
 <p>3)只训练一个投影层可能无法提供足够的能力来学习广泛的视觉-文本对齐</p>
-<h3 id="2-7-LIMA"><a href="#2-7-LIMA" class="headerlink" title="2.7.LIMA"></a>2.7.LIMA</h3>
+<h3 id="2-7-LIMA"><a href="#2-7-LIMA" class="headerlink" title="2.7.LIMA"></a>2.7.LIMA</h3><blockquote>
+<p>大型语言模型的训练分为两个阶段： (1)从原始文本进行无监督预训练，学习通用表示，(2)大规模指令调优和强化学习，以更好地对齐任务和用户偏好。我们通过训练LIMA来衡量这两个阶段的相对重要性，LIMA是一个用标准supervised进行微调的65B参数的基于LLaMa的语言模型：只在1000个精心策划的提示和回复上进行了微调。</p>
+</blockquote>
+<p><strong>Instruction</strong></p>
+<p>简单粗暴介绍了一个强的预训练语言模型经过高质量prompt对微调可以到达很强的性能，也就是说预训练阶段train进参数的知识，通过指令微调说出来。</p>
+<p>消融实验显示，在不扩大数据多样性的情况下扩大数据量时，收益大大下降，同时在优化数据质量时也获得了主要收益。</p>
+<p><strong>Experiment</strong></p>
+<p>主要就是个人工标注和gpt4标注，说明了1000个高标准sft数据微调远比大规模sft来的实际，但是感觉效果其实也挺一般的。</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230522152232048.png" >
+        </sapn>
+      </p>
+<p>下面这两个比较经典，证实了我在minigpt4的猜想（其实本质上sft就是在微调分布，这一个步骤并不需要太多数据，甚至可能一条数据反复拟合都能吧分布拉扯到一个合理的区间，特别适用于多语言模型，这就证明了gpt4报告中10%的中文但是他本质上中文并不差，因为语言之间本质上就存在翻译的逻辑，所以英文对应的中文永远是对应的，这种对应可以想象成分布的gap，只用利用高质量数据让两种语言分布产生交集即可），即使数据量增大，但是微调后的语言模型的输出质量并没有怎么提高（结果由gpt4评测）</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230522153329512.png" >
+        </sapn>
+      </p>
+<p>这个对话也是：</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230522153756587.png" >
+        </sapn>
+      </p>
+
         <!-- 分类文章 -->
         
       </div>

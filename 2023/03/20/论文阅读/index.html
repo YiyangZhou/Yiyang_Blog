@@ -155,6 +155,8 @@
 <p>​        MULTIINSTRUCT: Improving Multi-Modal Zero-Shot Learning via Instruction Tuning (MultiInstruct) [✅]</p>
 <p>​        MiniGPT-4:Enhancing Vision-Language Understanding with Advanced Large Language Models (MiniGPT-4) [✅]</p>
 <p>​        Visual Instruction Tuning (LLaVa) [✅]</p>
+<p>​        Musketeer (All for One, and One for All): A Generalist Vision-Language Model with Task Explanation Prompts [✅]</p>
+<p>​        VisionLLM: Large Language Model is also an Open-Ended Decoder for Vision-Centric Tasks [✅]</p>
 <p><strong>（5）评测：</strong></p>
 <p>​        《txt2img的评测》TIFA: Accurate and Interpretable Text-to-Image Faithfulness Evaluation with Question Answering (TIFA) [✅]</p>
 <p>​        Evaluating Object Hallucination in Large Vision-Language Models [✅]</p>
@@ -380,6 +382,26 @@
            data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230522153756587.png" >
         </sapn>
       </p>
+<h3 id="2-8-VisionLLM"><a href="#2-8-VisionLLM" class="headerlink" title="2.8.VisionLLM"></a>2.8.VisionLLM</h3><blockquote>
+<p>本文提出了一个统一的框架用于将多模态GPT类模型来做各种下游视觉任务</p>
+</blockquote>
+<p><strong>Introduction</strong></p>
+<p>LLM的成功并不能很好得拓展到视觉，因为两个模态存在较大的差异。说现有的各种视觉任务指令多种多样，直接应用于多模态GPT难度过大，得不到理想化的输出，因此，迫切需要一个统一的框架，能够无缝地集成llm的优势与以视觉为中心的任务的特定需求。VisionLLM它将以视觉为中心的任务的定义与llm的方法相结合。它包括三个核心组成部分： (1) a unifified language instruction designed for vision and vision-language tasks；(2) a language-guided image tokenizer；(3) an LLM-based open-ended task decoder that orchestrates various tasks using language instructions。</p>
+<p>以下列出了几种之前模型的范式：</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230523115418905.png" >
+        </sapn>
+      </p>
+<p><strong>Framework</strong></p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230523120008007.png" >
+        </sapn>
+      </p>
+<p>看起来是简单有效，但是我其实挺怀疑他是否真能生成对应的结果不夹杂其他多余语句。</p>
 
         <!-- 分类文章 -->
         

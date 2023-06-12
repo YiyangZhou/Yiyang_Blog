@@ -408,6 +408,34 @@
         </sapn>
       </p>
 <p>看起来是简单有效，但是我其实挺怀疑他是否真能生成对应的结果不夹杂其他多余语句。</p>
+<h3 id="2-9-Just-Ask-for-Calibration"><a href="#2-9-Just-Ask-for-Calibration" class="headerlink" title="2.9.Just Ask for Calibration"></a>2.9.Just Ask for Calibration</h3><blockquote>
+<p>本研究对从RLHF-LMs中提取置信度分数的计算方法进行了广泛评估。通过合适的提示策略和温度缩放方法，作者发现可以将RLHF-LMs的期望校准误差降低50%以上，从而获得相当好的校准性能。</p>
+</blockquote>
+<p><strong>Introduction</strong></p>
+<p>一个可信赖的预测系统不仅应该产生预测结果，而且应该提供良好校准的概率，即模型对预测结果的置信度应该准确反映预测结果正确的概率。对于语言模型来说，校准性不好会导致模型产生错误的事实或推理，即产生幻觉。然而，目前大型语言模型的能力已经得到了广泛关注，但它们的校准性相对较少受到关注。RLHF-LMs可能会以让对话更贴合用户指令为代价，而牺牲校准性。这是因为强化学习的目标是鼓励模型将尽可能多的概率质量分配给最可能的答案，而不是匹配可能答案的相对频率。本篇文章评估了从RLHF-LMs中提取置信度的一系列方法。我们发现，令人惊讶的是，流行的RLHF-LMs能够直接表达置信度分数，而这些置信度分数比模型的真实条件概率更好地校准（通过采样估计）。我们还发现，受到人类心理学研究的启发，即在回答前考虑备选答案可以减轻过度自信的影响，我们发现在给出置信度评分之前，提示模型提供几个答案选择可以显着改善口头概率的校准性。</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230612110833490.png" >
+        </sapn>
+      </p>
+<p>这幅图我暂时白话理解为：如果在语言模型预测label这一类确定性的东西之前给到一定的cot或者候选答案，然后综合给出一个label，他会具有更高的校准率。</p>
+<p><strong>Experiment</strong></p>
+<p>作者从TriviaQA和SciQ的验证集中随机抽取了1000个问题，从TruthfulQA中选择了817个问题进行实验。</p>
+<p>GPT3.5-turbo：</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230612111729761.png" >
+        </sapn>
+      </p>
+<p>GPT4：</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230612111859613.png" >
+        </sapn>
+      </p>
 
         <!-- 分类文章 -->
         

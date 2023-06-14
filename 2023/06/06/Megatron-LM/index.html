@@ -115,13 +115,99 @@
       <div class="post-content-main animate__animated  animate__fadeInUp">
         <!-- top型目录 -->
         
-        <h1 id="Megatron-LM"><a href="#Megatron-LM" class="headerlink" title="Megatron-LM"></a>Megatron-LM</h1><h2 id="1-什么是Megatron-LM？"><a href="#1-什么是Megatron-LM？" class="headerlink" title="1.什么是Megatron-LM？"></a>1.什么是Megatron-LM？</h2><p>Megatron-LM是一个基于pytorch的框架，专门用于训练基于transformer架构的大语言模型。</p>
+        <h1 id="Megatron-LM"><a href="#Megatron-LM" class="headerlink" title="Megatron-LM"></a>Megatron-LM</h1><p>整个知识摘抄于，摘抄一遍记忆深刻：<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/613196255">https://zhuanlan.zhihu.com/p/613196255</a></p>
+<h2 id="1-什么是Megatron-LM？"><a href="#1-什么是Megatron-LM？" class="headerlink" title="1.什么是Megatron-LM？"></a>1.什么是Megatron-LM？</h2><p>Megatron-LM是一个基于pytorch的框架，专门用于训练基于transformer架构的大语言模型。</p>
 <p>他通过以下几种方式实现了高效的大语言模型训练：</p>
 <p>1.模型并行：将模型参数分散在多个GPU上，减少单个GPU的内存占用。</p>
 <p>2.数据并行：将数据批次分散在多个GPU上，增加训练吞吐量。</p>
 <p>3.混合精度：使用16位浮点数代替32位浮点数，减少内存和带宽需求，提高计算速度。</p>
 <p>4.梯度累积：在多个数据批次上累计梯度，然后再更新参数，降低通讯开销。</p>
 <p>5.Megatron-LM还可以与其他框架如DeepSpeed结合，实现更高级的并行：ZeRO分片和管道并行。</p>
+<h2 id="2-前缀知识"><a href="#2-前缀知识" class="headerlink" title="2.前缀知识"></a>2.前缀知识</h2><h3 id="2-1-流水线并行（Pipeline-Parallelism）"><a href="#2-1-流水线并行（Pipeline-Parallelism）" class="headerlink" title="2.1.流水线并行（Pipeline Parallelism）"></a>2.1.流水线并行（Pipeline Parallelism）</h3><p>本篇文章将探索流水线并行，经典的流水线并行范式有Google推出的Gpipe，和微软推出的PipeDream。两者的推出时间都在2019年左右，大体设计框架一致。主要差别为：在梯度更新上，Gpipe是同步的，PipeDream是异步的。异步方法更进一步降低了GPU的空转时间比。虽然PipeDream设计更精妙些，但是Gpipe因为其“够用”和浅显易懂，更受大众欢迎（torch的pp接口就基于Gpipe）。因此本文以Gpipe作为流水线并行的范例进行介绍。</p>
+<p>本文主要内容包括：</p>
+<p>1、优化目标<br>2、模型并行<br>3、流水线并行</p>
+<ul>
+<li>切分micro-batch</li>
+<li>Re-materialization (active checkpoint)</li>
+</ul>
+<p><strong>1、优化目标</strong></p>
+<p>难点：</p>
+<ul>
+<li>训练更大的模型时，每块GPU里不仅要存模型参数，还要存中间结果（用来做Backward）。而更大的模型意味着需要更多的训练数据，进一步提高了中间结果的大小。加重了每块GPU的内存压力。</li>
+<li>网络通讯开销。数据在卡之间进行传输，是需要通讯时间的。不做设计的话，这个通讯时间可能会抹平多卡本身带来的训练速度提升。</li>
+</ul>
+<p><strong>2.模型并行</strong></p>
+<p>最简单最直接的方法是将模型分层，因为网络有很多层，将不同的层放到不同的GPU上。</p>
+<p>但是这样的话（每行表示一个gpu，每一列代表一个时间步）：</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230614115218668.png" >
+        </sapn>
+      </p>
+<p>这张图的含义是：我在GPU0上做完一次forward，然后将GPU0上最后一层的输入传给GPU1，继续做forward，直到四块GPU都做完forward后，我再依次做backward。等把四块GPU上的backward全部做完后，最后一个时刻我统一更新每一层的梯度。</p>
+<p>这种方法会有缺陷：</p>
+<p>==GPU利用率低==</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230614115610343.png" >
+        </sapn>
+      </p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230614115631260.png" >
+        </sapn>
+      </p>
+<p>==中间结果占用大量内存==</p>
+<p>因为每层需要存储每一层的结果，这样会导致每个gpu都会占用额外的一部分内存来存储这一结果，如果每一层的宽度太大（也就是模型变大）会导致这一个额外的存储太大平滑掉GPU增多带来的收益。</p>
+<p><strong>3.流水线并行</strong></p>
+<p>Gpipe提出了流水线并行，来解决上述两个问题</p>
+<p>3.1.切分micro-batch</p>
+<p>流水线并行的核心思想是：<strong>在模型并行的基础上，进一步引入数据并行的办法，即把原先的数据再划分成若干个batch，送入GPU进行训练</strong>。未划分前的数据，叫<strong>mini-batch</strong>。在mini-batch上再划分的数据，叫<strong>micro-batch</strong>。</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230614131618033.png" >
+        </sapn>
+      </p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230614131709553.png" >
+        </sapn>
+      </p>
+<p>3.2.re-materialization（active checkpoint）</p>
+<p>解决了GPU的空置问题，提升了GPU计算的整体效率。接下来，就要解决GPU的内存问题了。<br>前文说过，随着模型的增加，每块GPU中存储的中间结果也会越大。对此，Gpipe采用了一种非常简单粗暴但有效的办法：<strong>用时间换空间，在论文里，这种方法被命名为re-materalization，后人也称其为active checkpoint</strong>。<br>具体来说，就是<strong>几乎不存中间结果，等到backward的时候，再重新算一遍forward</strong>，图例如下：</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230614132106246.png" >
+        </sapn>
+      </p>
+<p>每块GPU上，我们只保存来自上一块的最后一层输入z，其余的中间结果我们算完就废。等到backward的时候再由保存下来的z重新进行forward来算出。<br>现在我们来计算每块GPU峰值时刻的内存：<br><strong>每块GPU峰值时刻存储大小 = 每块GPU上的输入数据大小 + 每块GPU在forward过程中的中间结果大小</strong></p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230614132131221.png" >
+        </sapn>
+      </p>
+<p>最后，再提一点，在micro-batch的划分下，我们在计算<strong>Batch Normalization</strong>时会有影响。Gpipe的方法是，在训练时计算和运用的是micro-batch里的均值和方差，但同时持续追踪全部mini-batch的移动平均和方差，以便在测试阶段进行使用。Layer Normalization则不受影响。</p>
+<h3 id="2-2-数据并行（DP-DDP与ZeRO）"><a href="#2-2-数据并行（DP-DDP与ZeRO）" class="headerlink" title="2.2.数据并行（DP,DDP与ZeRO）"></a>2.2.数据并行（DP,DDP与ZeRO）</h3><p>实际应用中，流水线并行并不特别流行，主要原因是模型能否均匀切割，影响了整体计算效率，这就需要算法工程师做手调。<strong>因此，今天我们来介绍一种应用最广泛，最易于理解的并行范式：数据并行。</strong></p>
+<p>数据并行的核心思想是：<strong>在各个GPU上都拷贝一份完整模型，各自吃一份数据，算一份梯度，最后对梯度进行累加来更新整体模型</strong>。理念不复杂，但到了大模型场景，<strong>巨大的存储和GPU间的通讯量，</strong>就是系统设计要考虑的重点了。在本文中，我们将递进介绍三种主流数据并行的实现方式：</p>
+<ul>
+<li><strong>DP（Data Parallelism）</strong>：最早的数据并行模式，一般采用参数服务器(Parameters Server)这一编程框架。实际中多用于单机多卡</li>
+<li><strong>DDP（Distributed Data Parallelism）</strong>：分布式数据并行，采用Ring AllReduce的通讯方式，实际中多用于多机场景</li>
+<li><strong>ZeRO：</strong>零冗余优化器。由微软推出并应用于其DeepSpeed框架中。严格来讲ZeRO采用数据并行+张量并行的方式，旨在降低存储。</li>
+</ul>
+<p><strong>DP</strong></p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230614133648185.png" >
+        </sapn>
+      </p>
 
         <!-- 分类文章 -->
         
@@ -129,7 +215,7 @@
       <div class="post-content-inner-space">
         
           <div class="space-toc-main animate__animated  animate__fadeInUp">
-            <ol class="space-toc"><li class="space-toc-item space-toc-level-2"><a class="space-toc-link" href="#1-%E4%BB%80%E4%B9%88%E6%98%AFMegatron-LM%EF%BC%9F"><span class="space-toc-text">1.什么是Megatron-LM？</span></a></li></ol>
+            <ol class="space-toc"><li class="space-toc-item space-toc-level-2"><a class="space-toc-link" href="#1-%E4%BB%80%E4%B9%88%E6%98%AFMegatron-LM%EF%BC%9F"><span class="space-toc-text">1.什么是Megatron-LM？</span></a></li><li class="space-toc-item space-toc-level-2"><a class="space-toc-link" href="#2-%E5%89%8D%E7%BC%80%E7%9F%A5%E8%AF%86"><span class="space-toc-text">2.前缀知识</span></a></li></ol>
            </div>
         
       </div>

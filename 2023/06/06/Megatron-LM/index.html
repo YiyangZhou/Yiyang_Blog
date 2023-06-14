@@ -115,7 +115,7 @@
       <div class="post-content-main animate__animated  animate__fadeInUp">
         <!-- top型目录 -->
         
-        <h1 id="Megatron-LM"><a href="#Megatron-LM" class="headerlink" title="Megatron-LM"></a>Megatron-LM</h1><p>整个知识摘抄于，摘抄一遍记忆深刻：<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/613196255">https://zhuanlan.zhihu.com/p/613196255</a></p>
+        <h1 id="Megatron-LM"><a href="#Megatron-LM" class="headerlink" title="Megatron-LM"></a>Megatron-LM</h1><p>整个知识摘抄于，摘抄一遍记忆深刻，这个博客写的是真好：<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/613196255">https://zhuanlan.zhihu.com/p/613196255</a></p>
 <h2 id="1-什么是Megatron-LM？"><a href="#1-什么是Megatron-LM？" class="headerlink" title="1.什么是Megatron-LM？"></a>1.什么是Megatron-LM？</h2><p>Megatron-LM是一个基于pytorch的框架，专门用于训练基于transformer架构的大语言模型。</p>
 <p>他通过以下几种方式实现了高效的大语言模型训练：</p>
 <p>1.模型并行：将模型参数分散在多个GPU上，减少单个GPU的内存占用。</p>
@@ -201,13 +201,61 @@
 <li><strong>DDP（Distributed Data Parallelism）</strong>：分布式数据并行，采用Ring AllReduce的通讯方式，实际中多用于多机场景</li>
 <li><strong>ZeRO：</strong>零冗余优化器。由微软推出并应用于其DeepSpeed框架中。严格来讲ZeRO采用数据并行+张量并行的方式，旨在降低存储。</li>
 </ul>
-<p><strong>DP</strong></p>
+<p><strong>2.2.1.DP</strong></p>
 <p>
         <span class="lazyload-img-span">
         <img   
            data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230614133648185.png" >
         </sapn>
       </p>
+<p>一个经典数据并行的过程如下：</p>
+<ul>
+<li>若干块<strong>计算GPU</strong>，如图中GPU0~GPU2；1块<strong>梯度收集GPU</strong>，如图中AllReduce操作所在GPU。</li>
+<li>在每块计算GPU上都拷贝一份完整的模型参数。</li>
+<li>把一份数据X（例如一个batch）均匀分给不同的计算GPU。</li>
+<li>每块计算GPU做一轮FWD和BWD后，算得一份梯度G。</li>
+<li>每块计算GPU将自己的梯度<strong>push</strong>给梯度收集GPU，做聚合操作。这里的聚合操作一般指<strong>梯度累加</strong>。当然也支持用户自定义。</li>
+<li>梯度收集GPU聚合完毕后，计算GPU从它那<strong>pull</strong>下完整的梯度结果，用于更新模型参数W。更新完毕后，计算GPU上的模型参数依然保持一致。</li>
+<li><strong>聚合再下发梯度的操作，称为AllReduce</strong>。</li>
+</ul>
+<p>前文说过，实现DP的一种经典编程框架叫“参数服务器”，在这个框架里，<strong>计算GPU称为Worker</strong>，<strong>梯度聚合GPU称为Server。</strong>在实际应用中，为了尽量减少通讯量，一般可选择一个Worker同时作为Server。比如可把梯度全发到GPU0上做聚合。需要再额外说明几点：</p>
+<ul>
+<li>1个Worker或者Server下可以不止1块GPU。</li>
+<li>Server可以只做梯度聚合，也可以梯度聚合+全量参数更新一起做</li>
+</ul>
+<p>==存在的问题==</p>
+<p>DP的框架理解起来不难，但实战中确有两个主要问题：</p>
+<ul>
+<li><p><strong>存储开销大</strong>。每块GPU上都存了一份完整的模型，造成冗余。关于这一点的优化，我们将在后文ZeRO部分做讲解。</p>
+</li>
+<li><p><strong>通讯开销大</strong>。Server需要和每一个Worker进行梯度传输。当Server和Worker不在一台机器上时，Server的带宽将会成为整个系统的计算效率瓶颈。</p>
+</li>
+<li><p><strong>worker摸鱼</strong>。如果集中push完然后等待pull操作，那么所有的worker都在摸鱼。</p>
+</li>
+</ul>
+<p>为了解决第三个问题提出了<strong>梯度异步更新</strong></p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230614134335872.png" >
+        </sapn>
+      </p>
+<p>上图刻画了在<strong>梯度异步更新</strong>的场景下，某个Worker的计算顺序为：</p>
+<ul>
+<li>在第10轮计算中，该Worker正常计算梯度，并向Server发送push&amp;pull梯度请求。</li>
+<li>但是，该Worker并不会实际等到把聚合梯度拿回来，更新完参数W后再做计算。而是直接拿旧的W，吃新的数据，继续第11轮的计算。<strong>这样就保证在通讯的时间里，Worker也在马不停蹄做计算，提升计算通讯比。</strong></li>
+<li>当然，异步也不能太过份。只计算梯度，不更新权重，那模型就无法收敛。图中刻画的是<strong>延迟为1</strong>的异步更新，也就是在开始第12轮对的计算时，必须保证W已经用第10、11轮的梯度做完2次更新了。</li>
+</ul>
+<p>参数服务器的框架下，延迟的步数也可以由用户自己决定，下图分别刻划了几种延迟情况：</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230614134627712.png" >
+        </sapn>
+      </p>
+<p>总结一下，<strong>异步很香，但对一个Worker来说，只是等于W不变，batch的数量增加了而已，在SGD下，会减慢模型的整体收敛速度</strong>。异步的整体思想是，比起让Worker闲着，倒不如让它多吃点数据，虽然反馈延迟了，但只要它在干活在学习就行。<br>batch就像活，异步就像画出去的饼，且往往不指定延迟步数，每个Worker干越来越多的活，但模型却没收敛。</p>
+<p><strong>2.2.2.DDP</strong></p>
+<p>受通讯负载不均的影响，<strong>DP一般用于单机多卡场景</strong>。因此，DDP作为一种更通用的解决方案出现了，既能多机，也能单机。<strong>DDP首先要解决的就是通讯问题：将Server上的通讯压力均衡转到各个Worker上。实现这一点后，可以进一步去Server，留Worker。</strong><br>前文我们说过，聚合梯度 + 下发梯度这一轮操作，称为AllReduce。<strong>接下来我们介绍目前最通用的AllReduce方法：Ring-AllReduce</strong>。它由百度最先提出，非常有效地解决了数据并行中通讯负载不均的问题，使得DDP得以实现。</p>
 
         <!-- 分类文章 -->
         

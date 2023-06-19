@@ -445,6 +445,34 @@
 </blockquote>
 <p><strong>Introduction</strong></p>
 <p>现在很多语言模型会生成很多事实性错误，因此，开发自动评估一个主张（例如生成的文本）与上下文（例如模型输入）的事实一致性的度量标准至关重要。在实验中，我们通过微调轻量级的RoBERTa模型（125M和355M）来构建ALIGNSCORE进行对齐。我们在最新的大规模评估基准上评估了ALIGNSCORE，包括SummaC（Laban等，2022）、TRUE（Honovich等，2022b）和其他测试集，总共包含22个具有挑战性的评估数据集。我们的方法在不同的质量指标上明显优于之前最先进的度量标准。值得注意的是，我们的度量标准（355M）与基于数量级更大的语言模型（如ChatGPT和GPT-4）的最新度量标准持平，有时甚至更好。特别是，ALIGNSCORE在19个零样本数据集上展现出很强的泛化能力，这些数据集在对齐函数训练过程中从未见过。我们还进行了广泛的消融研究，以展示上下文拆分策略和其他建模选择的有效性。</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/202306192228585.png" >
+        </sapn>
+      </p>
+<p>给定两个文本片段a和b，我们认为当b中的所有信息都存在于a中并且不与a矛盾时，b与a对齐。从概念上讲，我们将信息对齐建模为一个将文本对(a, b)映射到标签y的函数，该标签描述了对齐的程度：</p>
+<blockquote>
+<p>f(a, b) —-&gt; score</p>
+</blockquote>
+<p>整体思路很像监督微调。</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/202306192231922.png" >
+        </sapn>
+      </p>
+<p>其中:</p>
+<p>ybin用于（重述、问答、信息检索和摘要）</p>
+<p>y3way用于3类分类标签（NLI和事实验证）</p>
+<p>yreg用于对于具有连续标签的任务（语义文本相似性）打分</p>
+<p>总体构建了一个对齐模型(RoBERTa和三个线性层用于输出上面三个东西)，loss为：</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/202306192232361.png" >
+        </sapn>
+      </p>
 
         <!-- 分类文章 -->
         

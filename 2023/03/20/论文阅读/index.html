@@ -473,6 +473,37 @@
            data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/202306192232361.png" >
         </sapn>
       </p>
+<h3 id="2-11-Can-Language-Models-Teach-Weaker-Agents"><a href="#2-11-Can-Language-Models-Teach-Weaker-Agents" class="headerlink" title="2.11.Can Language Models Teach Weaker Agents?"></a>2.11.Can Language Models Teach Weaker Agents?</h3><blockquote>
+<p>研究了教师和学生双代理架构，教师何时以及如何通过自然语言解释干预来提高学生的表现。</p>
+<p>学生问题分为四个方面：</p>
+<p>（1）教师在测试时的干预是否改善了学生的预测</p>
+<p>（2）何时值得解释一个数据点</p>
+<p>（3）教师如何个性化解释以更好地教导学生</p>
+<p>（4)教师的解释是否也能改善学生在未来未解释的数据上的表现</p>
+<p>本文提出了两个点：<br>（1）一个干预函数，模拟干预的效用，在干预效用最高的时候对student进行干预，从而在较低效用下提高学生的表现</p>
+<p>（2）证明教师给到学生解释能提升学生性能，并证明了教师给到学生错误的解释会降低学生的性能甚至会使他达到随机。</p>
+</blockquote>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/202306192238154.png" >
+        </sapn>
+      </p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/202306192238704.png" >
+        </sapn>
+      </p>
+<p>本研究旨在评估大型语言模型（LLMs）在解决推理任务中教导和改善较弱代理的能力，并提出了一个学生-教师框架。研究问题包括：</p>
+<p>RQ1：教师LLM在测试时是否能够干预并改善学生LLM的预测？</p>
+<p>RQ2：在固定的干预预算下，教师何时干预（即选择哪些数据点）以最大化学生表现？</p>
+<p>RQ3：给定一组干预数据，教师模型能否使用心理理论来个性化解释以改善学生表现？</p>
+<p>RQ4：在多轮交互中，教师解释是否推广并改善学生在未解释样本上的表现？</p>
+<p>RQ5：教师LLMs是否会通过向学生提供误导性解释而降低学生表现？</p>
+<p>研究发现，教师LLMs能够有效地干预学生的推理过程，并改善学生在任务上的表现。利用心理理论，提出了一种干预函数，使教师能够根据学生的推理过程选择最有帮助的干预样本。同时，研究还表明，个性化解释对学生模型的表现有积极影响，而随机解释效果较差。此外，教师解释能够推广到未解释的数据，并提高学生在这些数据上的表现。</p>
+<p>然而，研究还发现，如果教师LLMs提供虚假解释，并且学生直接采纳这些解释，将会降低学生的表现。这对于其他代理在错误地信任这些解释的情况下给出解释的LLMs可能具有潜在的负面影响。</p>
+<p>总之，这项研究全面地展示了LLMs教导和改善较弱LLMs的能力，不仅在解释的测试样本上有改进，而且在未解释的数据上也有提升。</p>
 
         <!-- 分类文章 -->
         

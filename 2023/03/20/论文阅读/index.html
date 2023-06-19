@@ -440,6 +440,11 @@
            data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/image-20230612111859613.png" >
         </sapn>
       </p>
+<h3 id="2-10-ALIGNSCORE"><a href="#2-10-ALIGNSCORE" class="headerlink" title="2.10.ALIGNSCORE"></a>2.10.ALIGNSCORE</h3><blockquote>
+<p>很多文本生成应用需要生成的文本与输入信息在事实上保持一致。本文提出了一种新的综合指标ALIGNSCORE，适用于各种上述的事实不一致性情况。ALIGNSCORE基于两个任意文本之间的信息对齐的通用函数。关键是，我们通过整合大量不同的数据源开发了对齐函数的统一训练框架，从七个成熟的任务（NLI、QA、释义、事实验证、信息检索、语义相似度和摘要生成）中获得了470万个训练样本。我们在包含22个评估数据集的大规模基准上进行了大量实验，其中19个数据集在对齐训练中从未见过。ALIGNSCORE在各种先前的指标上取得了显著的改进。</p>
+</blockquote>
+<p><strong>Introduction</strong></p>
+<p>现在很多语言模型会生成很多事实性错误，因此，开发自动评估一个主张（例如生成的文本）与上下文（例如模型输入）的事实一致性的度量标准至关重要。在实验中，我们通过微调轻量级的RoBERTa模型（125M和355M）来构建ALIGNSCORE进行对齐。我们在最新的大规模评估基准上评估了ALIGNSCORE，包括SummaC（Laban等，2022）、TRUE（Honovich等，2022b）和其他测试集，总共包含22个具有挑战性的评估数据集。我们的方法在不同的质量指标上明显优于之前最先进的度量标准。值得注意的是，我们的度量标准（355M）与基于数量级更大的语言模型（如ChatGPT和GPT-4）的最新度量标准持平，有时甚至更好。特别是，ALIGNSCORE在19个零样本数据集上展现出很强的泛化能力，这些数据集在对齐函数训练过程中从未见过。我们还进行了广泛的消融研究，以展示上下文拆分策略和其他建模选择的有效性。</p>
 
         <!-- 分类文章 -->
         

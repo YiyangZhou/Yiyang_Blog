@@ -194,7 +194,7 @@
         </sapn>
       </p>
 <p>最后，再提一点，在micro-batch的划分下，我们在计算<strong>Batch Normalization</strong>时会有影响。Gpipe的方法是，在训练时计算和运用的是micro-batch里的均值和方差，但同时持续追踪全部mini-batch的移动平均和方差，以便在测试阶段进行使用。Layer Normalization则不受影响。</p>
-<h3 id="2-2-数据并行（DP-DDP与ZeRO）"><a href="#2-2-数据并行（DP-DDP与ZeRO）" class="headerlink" title="2.2.数据并行（DP,DDP与ZeRO）"></a>2.2.数据并行（DP,DDP与ZeRO）</h3><p>实际应用中，流水线并行并不特别流行，主要原因是模型能否均匀切割，影响了整体计算效率，这就需要算法工程师做手调。<strong>因此，今天我们来介绍一种应用最广泛，最易于理解的并行范式：数据并行。</strong></p>
+<h3 id="2-2-数据并行（DP-DDP）"><a href="#2-2-数据并行（DP-DDP）" class="headerlink" title="2.2.数据并行（DP,DDP）"></a>2.2.数据并行（DP,DDP）</h3><p>实际应用中，流水线并行并不特别流行，主要原因是模型能否均匀切割，影响了整体计算效率，这就需要算法工程师做手调。<strong>因此，今天我们来介绍一种应用最广泛，最易于理解的并行范式：数据并行。</strong></p>
 <p>数据并行的核心思想是：<strong>在各个GPU上都拷贝一份完整模型，各自吃一份数据，算一份梯度，最后对梯度进行累加来更新整体模型</strong>。理念不复杂，但到了大模型场景，<strong>巨大的存储和GPU间的通讯量，</strong>就是系统设计要考虑的重点了。在本文中，我们将递进介绍三种主流数据并行的实现方式：</p>
 <ul>
 <li><strong>DP（Data Parallelism）</strong>：最早的数据并行模式，一般采用参数服务器(Parameters Server)这一编程框架。实际中多用于单机多卡</li>
@@ -256,6 +256,79 @@
 <p>总结一下，<strong>异步很香，但对一个Worker来说，只是等于W不变，batch的数量增加了而已，在SGD下，会减慢模型的整体收敛速度</strong>。异步的整体思想是，比起让Worker闲着，倒不如让它多吃点数据，虽然反馈延迟了，但只要它在干活在学习就行。<br>batch就像活，异步就像画出去的饼，且往往不指定延迟步数，每个Worker干越来越多的活，但模型却没收敛。</p>
 <p><strong>2.2.2.DDP</strong></p>
 <p>受通讯负载不均的影响，<strong>DP一般用于单机多卡场景</strong>。因此，DDP作为一种更通用的解决方案出现了，既能多机，也能单机。<strong>DDP首先要解决的就是通讯问题：将Server上的通讯压力均衡转到各个Worker上。实现这一点后，可以进一步去Server，留Worker。</strong><br>前文我们说过，聚合梯度 + 下发梯度这一轮操作，称为AllReduce。<strong>接下来我们介绍目前最通用的AllReduce方法：Ring-AllReduce</strong>。它由百度最先提出，非常有效地解决了数据并行中通讯负载不均的问题，使得DDP得以实现。</p>
+<p>AllReduc类似于：</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/202306201130885.png" >
+        </sapn>
+      </p>
+<p>但是对于Ring-AllReduce则分为两大步骤实现该目标：<strong>Reduce-Scatter</strong>和<strong>All-Gather。</strong></p>
+<p><strong>Reduce-Scatter</strong><br>定义网络拓扑关系，使得每个GPU只和其相邻的两块GPU通讯。每次发送对应位置的数据进行<strong>累加</strong>。每一次累加更新都形成一个拓扑环，因此被称为Ring。看到这觉得困惑不要紧，步骤类似于这样，这里又想夸作者了，写得真好：</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/202306201132889.png" >
+        </sapn>
+      </p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/202306201133370.png" >
+        </sapn>
+      </p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/202306201133406.png" >
+        </sapn>
+      </p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/202306201134140.png" >
+        </sapn>
+      </p>
+<p><strong>3次</strong>更新之后，每块GPU上都有一块数据拥有了对应位置完整的聚合（图中红色）。此时，Reduce-Scatter阶段结束。进入All-Gather阶段。目标是把红色块的数据广播到其余GPU对应的位置上。</p>
+<p><strong>All-Gather</strong><br>如名字里Gather所述的一样，这操作里依然按照“相邻GPU对应位置进行通讯”的原则，但对应位置数据不再做相加，而是直接替换。All-Gather以红色块作为起点。</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/202306201135723.png" >
+        </sapn>
+      </p>
+<p>以此类推，同样经过<strong>3轮迭代后</strong>，使得每块GPU上都汇总到了完整的数据，变成如下形式：</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/202306201135189.png" >
+        </sapn>
+      </p>
+<p><strong>Ring-AllReduce的通讯量分析</strong></p>
+<p>假设model的参数量是&amp;，GPU的个数为N，梯度的大小总量为w，那么每个GPU的梯度大小为W/N（只算其通讯量）：</p>
+<ul>
+<li>Reduce-Scatter阶段的通讯量为：（N - 1）（&amp;/N）</li>
+<li>All-Gather阶段的通讯量为：（N - 1）(&amp;/N)</li>
+</ul>
+<p>其中的N-1来源于上述图的推导。所以单卡的通讯量为2（N - 1）(&amp;/N) –&gt; 2&amp;，总的通讯量为2N&amp;。</p>
+<p>这和之前的All-Reduce的通讯量一样的，但是其中的Server只用来当搬运工，当越来越多的GPU分布到较远的机器上时，DP的通讯时间是很大的。</p>
+<p><strong>总结</strong></p>
+<p>1、在DP中，每个GPU上都拷贝一份完整的模型，每个GPU上处理batch的一部分数据，所有GPU算出来的梯度进行累加后，再传回各GPU用于更新参数<br>2、DP多采用参数服务器这一编程框架，一般由若个计算Worker和1个梯度聚合Server组成。Server与每个Worker通讯，Worker间并不通讯。因此Server承担了系统所有的通讯压力。基于此DP常用于单机多卡场景。<br>3、异步梯度更新是提升计算通讯比的一种方法，延迟更新的步数大小决定了模型的收敛速度。<br>4、Ring-AllReduce通过定义网络环拓扑的方式，将通讯压力均衡地分到每个GPU上，使得跨机器的数据并行（DDP）得以高效实现。<br>5、DP和DDP的总通讯量相同，但因负载不均的原因，DP需要耗费更多的时间搬运数据。</p>
+<h3 id="2-3-ZeRO（零冗余优化）"><a href="#2-3-ZeRO（零冗余优化）" class="headerlink" title="2.3.ZeRO（零冗余优化）"></a>2.3.ZeRO（零冗余优化）</h3><p>之前两种方法DP和DDP，DP存在负载不均的问题，但是他俩还存在一个共同问题就是显存开销问题，数据并行中，每个GPU上都复制了一份完整模型，当模型变大时，很容易打爆GPU的显存。</p>
+<p>下面介绍一下微软开发的<strong>ZeRO（零冗余优化）</strong>，它是DeepSpeed这一分布式训练框架的核心，被用来解决大模型训练中的显存开销问题。他的主旨思想就是<strong>通讯换显存</strong>。</p>
+<p><strong>2.3.1.训练过程中显卡需要存储的东西</strong></p>
+<p>存储主要分为两大块：Model States和Residual States<br><strong>Model States</strong>指和模型本身息息相关的，必须存储的内容，具体包括：</p>
+<ul>
+<li><strong>optimizer states</strong>：Adam优化算法中的momentum和variance</li>
+<li><strong>gradients</strong>：模型梯度</li>
+<li><strong>parameters</strong>：模型参数W</li>
+</ul>
+<p><strong>Residual States</strong>指并非模型必须的，但在训练过程中会额外产生的内容，具体包括：</p>
+<ul>
+<li><strong>activation</strong>：激活值。在流水线并行中我们曾详细介绍过。在backward过程中使用链式法则计算梯度时会用到。有了它算梯度会更快，但它不是必须存储的，因为可以通过重新做Forward来算它。</li>
+<li><strong>temporary buffers:</strong> 临时存储。例如把梯度发送到某块GPU上做加总聚合时产生的存储。</li>
+<li><strong>unusable fragment memory</strong>：碎片化的存储空间。虽然总存储空间是够的，但是如果取不到连续的存储空间，相关的请求也会被fail掉。对这类空间浪费可以通过内存整理来解决。</li>
+</ul>
 
         <!-- 分类文章 -->
         

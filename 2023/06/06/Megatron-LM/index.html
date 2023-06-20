@@ -329,6 +329,21 @@
 <li><strong>temporary buffers:</strong> 临时存储。例如把梯度发送到某块GPU上做加总聚合时产生的存储。</li>
 <li><strong>unusable fragment memory</strong>：碎片化的存储空间。虽然总存储空间是够的，但是如果取不到连续的存储空间，相关的请求也会被fail掉。对这类空间浪费可以通过内存整理来解决。</li>
 </ul>
+<p><strong>2.3.2.精度混合训练</strong></p>
+<p>对于模型，我们肯定希望其参数越精准越好，也即我们用<strong>fp32（单精度浮点数，存储占4byte）</strong>来表示参数W。但是在forward和backward的过程中，fp32的计算开销也是庞大的。那么能否在计算的过程中，引入<strong>fp16或bf16（半精度浮点数，存储占2byte）</strong>，来减轻计算压力呢？于是，混合精度训练就产生了，它的步骤如下图：</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/202306201201271.png" >
+        </sapn>
+      </p>
+<ul>
+<li>存储一份fp32的parameter，momentum和variance（统称model states）</li>
+<li>在forward开始之前，额外开辟一块存储空间，将fp32 parameter减半到fp16 parameter。</li>
+<li>正常做forward和backward，在此之间产生的activation和gradients，都用fp16进行存储。</li>
+<li>用fp16 gradients去更新fp32下的model states。</li>
+<li>当模型收敛后，fp32的parameter就是最终的参数输出。</li>
+</ul>
 
         <!-- 分类文章 -->
         

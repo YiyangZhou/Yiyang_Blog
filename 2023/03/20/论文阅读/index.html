@@ -138,6 +138,7 @@
 <p>​        Multitask Prompted Training Enables Zero-Shot Task Generalization (T0) [✅]</p>
 <p>​        Scaling Instruction-Finetuned Language Models (Flan-PaLM) [✅]</p>
 <p>​        SELF-INSTRUCT: Aligning Language Model with Self Generated Instructions (SELF-INSTRUCT) [✅]</p>
+<p>​        The False Promise of Imitating Proprietary LLMs [✅]</p>
 <p><strong>大模型+对话</strong></p>
 <p>​        Training language models to follow instructions with human feedback (InstructGPT) [✅]</p>
 <p>​        Baize: An Open-Source Chat Model with Parameter-Effificient Tuning on Self-Chat Data (Baize) [✅]</p>
@@ -509,6 +510,27 @@
 <p>研究发现，教师LLMs能够有效地干预学生的推理过程，并改善学生在任务上的表现。利用心理理论，提出了一种干预函数，使教师能够根据学生的推理过程选择最有帮助的干预样本。同时，研究还表明，个性化解释对学生模型的表现有积极影响，而随机解释效果较差。此外，教师解释能够推广到未解释的数据，并提高学生在这些数据上的表现。</p>
 <p>然而，研究还发现，如果教师LLMs提供虚假解释，并且学生直接采纳这些解释，将会降低学生的表现。这对于其他代理在错误地信任这些解释的情况下给出解释的LLMs可能具有潜在的负面影响。</p>
 <p>总之，这项研究全面地展示了LLMs教导和改善较弱LLMs的能力，不仅在解释的测试样本上有改进，而且在未解释的数据上也有提升。</p>
+<h3 id="2-12-The-False-Promise-of-Imitating-Proprietary-LLMs"><a href="#2-12-The-False-Promise-of-Imitating-Proprietary-LLMs" class="headerlink" title="2.12.The False Promise of Imitating Proprietary LLMs"></a>2.12.The False Promise of Imitating Proprietary LLMs</h3><blockquote>
+<p>本文研究了利用更弱的开源语言模型在更强大的专有模型（如ChatGPT）的输出上进行微调，以便廉价地改进较弱的语言模型。我们首先使用不同的基础模型大小（1.5B-13B）、数据源和模仿数据量（0.3M-150M个标记）对一系列模型进行微调，模仿ChatGPT。然后，我们使用评估员和经典的自然语言处理基准测试对这些模型进行评估。总体而言，我们得出结论：模型模仿是一个虚假的承诺。开源语言模型和闭源语言模型之间存在着实质性的能力差距，目前的方法只能通过大量的模仿数据或使用更强大的基础语言模型来弥合这一差距，而这种方法往往不太可行。因此，我们认为提高开源模型的最有效方法是应对开发更好的基础语言模型这一艰巨的挑战，而不是采用模仿专有系统的捷径。</p>
+</blockquote>
+<p><strong>Introduction</strong></p>
+<p>在这项工作中，我们研究了解决这个问题的一个可能方法：模型模仿。模型模仿的前提是，一旦通过API提供专有的语言模型，就可以收集API的输出数据集，并将其用于对开源语言模型进行微调。理论上，这种模仿过程可以轻松地提取任何专有模型的功能，从而暗示开源语言模型将始终与商业模型竞争，例如，Alpaca。</p>
+<p>本文研究了1.5B-13B各种的LLM，主要使用人工评估和GPT-4评估（与ChatGPT进行盲目成对比较）以及在经典NLP基准测试（MMLU、NQ、HumanEval）上的准确性进行评估。</p>
+<p>发现：遵循指令上和chatgpt相当，但是在专有的评测上他们还是很弱的。我们的主要观点是，模型模仿并非是一种免费午餐：当今的开源语言模型与闭源模型之间存在着能力差距，这个差距不能通过廉价的模仿数据微调来弥合。事实上，我们发现通过增加基础语言模型的规模等方式来缩小这个能力差距比额外的模仿数据微调更有效。</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/202306211548241.png" >
+        </sapn>
+      </p>
+<p>总体的实验结果如下：</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/202306211623746.png" >
+        </sapn>
+      </p>
+<p>总体来说就是<strong>能在见过的能力表现好，但是不全面，有些任务甚至会下降。同时主要模仿了GPT的说话方式，并没有太模仿内容（简而言之就是这些模仿的模型自信满满的讲出了一堆屁话）</strong>，同时在微调过程中，甚至要避免引入新的知识，否则模型可能会猜测或虚构答案，而不是按照预期执行任务。</p>
 
         <!-- 分类文章 -->
         

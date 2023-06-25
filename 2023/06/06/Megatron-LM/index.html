@@ -468,14 +468,91 @@
         </sapn>
       </p>
 <p>ZeRO-infinity也是同理，它们在解决的事情都是：找个除GPU之外的地方，存数据。感兴趣的朋友可以深入研究，这里就不展开了。</p>
-<h3 id="2-4-张量模型并行（TP），Megatron-LM"><a href="#2-4-张量模型并行（TP），Megatron-LM" class="headerlink" title="2.4.张量模型并行（TP），Megatron-LM"></a>2.4.张量模型并行（TP），Megatron-LM</h3>
+<h2 id="3-张量模型并行（TP），Megatron-LM"><a href="#3-张量模型并行（TP），Megatron-LM" class="headerlink" title="3.张量模型并行（TP），Megatron-LM"></a>3.张量模型并行（TP），Megatron-LM</h2><p>**目前基于Transformer做大模型预训练最基本的并行范式：来自NVIDIA的张量模型并行(TP)**。它的基本思想就是把模型的参数纵向切开，放到不同的GPU上进行独立计算，然后再做聚合。</p>
+<p>这个老哥的行文思路：</p>
+<p>全文结构如下：<br>    一、切分权重的两种方法<br>    二、MLP层<br>    三、self-attention层<br>    四、Embedding层<br>    五、Cross-entropy层<br>    六、经典并行：TP + DP (Megatron + ZeRO)<br>    七、实验效果与GPU利用率<br>    八、参考</p>
+<h3 id="3-1-切分权重"><a href="#3-1-切分权重" class="headerlink" title="3.1.切分权重"></a>3.1.切分权重</h3><p>设输入数据为X，参数为W。X的维度 = (b, s, h)，W的维度 = (h, h’)。其中：</p>
+<ul>
+<li><code>b</code>：batch_size，表示批量大小</li>
+<li><code>s</code>：sequence_length，表示输入序列的长度</li>
+<li><code>h</code>：hidden_size，表示每个token向量的维度。</li>
+<li><code>h&#39;</code>：参数W的hidden_size。</li>
+</ul>
+<p>则每次forward的过程如下：</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/202306251701391.webp" >
+        </sapn>
+      </p>
+<p>为画图方便，图中所绘是<code>b=1</code>时的情况。<br>假设现在W太大，导致单卡装不下。我们需要把W切开放到不同的卡上，则我们面临三个主要问题：</p>
+<ul>
+<li>怎么切分W。</li>
+<li>切完W后，怎么做forward。</li>
+<li>做完forward后，怎么做backward，进而求出梯度，更新权重。</li>
+</ul>
+<p>一般来说，我们可以沿着W的行（h维度），或者列（h’维度）切分W。下面我们分别介绍这两种切割办法，并说明它们是如何做forward和backward的。</p>
+<p><strong>3.1.1.按行切分权重</strong></p>
+<p>（1）forward</p>
+<p>我们用<code>N</code>来表示GPU的数量。有几块GPU，就把W按行维度切成几份。下图展示了N=2时的切割方式：</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/202306251707376.webp" >
+        </sapn>
+      </p>
+<p>W按照行维度切开后，X的维度和它不对齐了，这可怎么做矩阵乘法呢？很简单，再把X“按列切开”就行了，如下图所示：</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/202306251709750.webp" >
+        </sapn>
+      </p>
+<p>（2）backward</p>
+<p>做完forward，取得预测值Y，进而可计算出损失L，接下来就能做backward了。我们重画一下forward的过程，并在其中加入backward的部分，整体流程图如下：</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/202306251716931.webp" >
+        </sapn>
+      </p>
+<ul>
+<li>**<code>f</code> 和 <code>g</code>**：分别表示两个算子，每个算子都包含一组forward + backward操作。forward操作已讲过，不再赘述。</li>
+<li>图中的每一行，表示单独在一块GPU上计算的过程</li>
+<li><strong><code>g</code> 的backward</strong>：假定现在我们要对W<del>i</del>求梯度，则可推出:</li>
+</ul>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/202306251716536.png" >
+        </sapn>
+      </p>
+<p>​        也就是说，只要把：</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/202306251718065.png" >
+        </sapn>
+      </p>
+<p>​        同时广播到两块GPU上，两块GPU就可以<strong>独立计算</strong>各自权重的梯度了。</p>
+<ul>
+<li><p><strong><code>f</code> 的backward</strong>：在上图中，我们只画了模型其中一层的计算过程。当模型存在多层时，梯度要从上一层向下一层传播。比如图中，梯度要先传播到X，然后才能往下一层继续传递。这就是<code>f</code> 的backward的作用。这里也易推出:</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/202306251718092.png" >
+        </sapn>
+      </p>
+</li>
+</ul>
+
         <!-- 分类文章 -->
         
       </div>
       <div class="post-content-inner-space">
         
           <div class="space-toc-main animate__animated  animate__fadeInUp">
-            <ol class="space-toc"><li class="space-toc-item space-toc-level-2"><a class="space-toc-link" href="#1-%E4%BB%80%E4%B9%88%E6%98%AFMegatron-LM%EF%BC%9F"><span class="space-toc-text">1.什么是Megatron-LM？</span></a></li><li class="space-toc-item space-toc-level-2"><a class="space-toc-link" href="#2-%E5%89%8D%E7%BC%80%E7%9F%A5%E8%AF%86"><span class="space-toc-text">2.前缀知识</span></a></li></ol>
+            <ol class="space-toc"><li class="space-toc-item space-toc-level-2"><a class="space-toc-link" href="#1-%E4%BB%80%E4%B9%88%E6%98%AFMegatron-LM%EF%BC%9F"><span class="space-toc-text">1.什么是Megatron-LM？</span></a></li><li class="space-toc-item space-toc-level-2"><a class="space-toc-link" href="#2-%E5%89%8D%E7%BC%80%E7%9F%A5%E8%AF%86"><span class="space-toc-text">2.前缀知识</span></a></li><li class="space-toc-item space-toc-level-2"><a class="space-toc-link" href="#3-%E5%BC%A0%E9%87%8F%E6%A8%A1%E5%9E%8B%E5%B9%B6%E8%A1%8C%EF%BC%88TP%EF%BC%89%EF%BC%8CMegatron-LM"><span class="space-toc-text">3.张量模型并行（TP），Megatron-LM</span></a></li></ol>
            </div>
         
       </div>

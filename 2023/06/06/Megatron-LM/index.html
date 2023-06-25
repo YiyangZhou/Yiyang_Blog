@@ -545,6 +545,75 @@
       </p>
 </li>
 </ul>
+<p><strong>3.1.2.按列切分权重</strong></p>
+<p>（1）forward</p>
+<p>按列切分权重后，forward计算图如下：</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/202306252015390.webp" >
+        </sapn>
+      </p>
+<p>（2）backward</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/202306252018841.webp" >
+        </sapn>
+      </p>
+<ul>
+<li><code>g</code>的backward：易推出：</li>
+</ul>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/202306252023828.png" >
+        </sapn>
+      </p>
+<ul>
+<li><p><code>f</code> 的backward：因为对于损失L，X既参与了XW1的计算，也参与了XW2的计算。因此有：</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/202306252024436.png" >
+        </sapn>
+      </p>
+</li>
+</ul>
+<p>在Megatron-LM中，权重的切分操作就是由这两个基础算子组合而成的。接下来，针对Transformer模型，我们依次来看在不同的部分里，Megatron-LM是怎么做切分的。</p>
+<h3 id="3-2-MLP层"><a href="#3-2-MLP层" class="headerlink" title="3.2.MLP层"></a>3.2.MLP层</h3><p><strong>3.2.1.MLP层的张量模型并行计算方法</strong></p>
+<p>！抽象起来了。。</p>
+<p>MLP层构造最简单，所以我们先来看它。MLP层计算过程如下图：</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/202306252032120.webp" >
+        </sapn>
+      </p>
+<p>其中，GELU是激活函数，A和B分别为两个线性层。在Transformer里，一般设h’ = 4h。假设现在有N块GPU，我们要把MLP层的权重拆到上面做计算，要怎么拆分呢？Megatron提供的拆分办法如下：</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/202306252159419.webp" >
+        </sapn>
+      </p>
+<p>在MLP层中，<strong>对A采用“列切割”，对B采用“行切割”</strong>。</p>
+<ul>
+<li><code>f</code> 的forward计算：把输入X拷贝到两块GPU上，每块GPU即可独立做forward计算。</li>
+<li><code>g</code> 的forward计算：每块GPU上的forward的计算完毕，取得Z1和Z2后，GPU间做一次<strong>AllReduce</strong>，相加结果产生Z。</li>
+<li><code>g</code> 的backward计算：只需要把对Z的梯度拷贝到两块GPU上，两块GPU就能各自独立做梯度计算。</li>
+<li><code>f</code> 的backward计算：当当前层的梯度计算完毕，需要传递到下一层继续做梯度计算时，我们需要求得对X的梯度。则此时两块GPU做一次<strong>AllReduce</strong>，把各自的梯度相加。</li>
+</ul>
+<p>为什么我们对A采用列切割，对B采用行切割呢？<strong>这样设计的原因是，我们尽量保证各GPU上的计算相互独立，减少通讯量</strong>。对A来说，需要做一次GELU的计算，而GELU函数是非线形的，它的性质如下：</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/202306252218533.webp" >
+        </sapn>
+      </p>
+<p>也就意味着，如果对A采用行切割，我们必须在做GELU前，做一次AllReduce，这样就会产生额外通讯量。但是如果对A采用列切割，那每块GPU就可以继续独立计算了。一旦确认好A做列切割，那么也就相应定好B需要做行切割了。</p>
+<p><strong>3.2.2.MLP层的通讯量</strong></p>
+<p>由2.1的分析可知，<strong>MLP层做forward时产生一次AllReduce，做backward时产生一次AllReduce</strong>。在<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/617133971">之前</a>的文章里我们讲过，AllReduce的过程分为两个阶段，Reduce-Scatter和All-Gather，每个阶段的通讯量都相等。现在我们设每个阶段的通讯量为 Φ ，则<strong>一次AllReduce产生的通讯量为</strong> 2Φ <strong>。MLP层的总通讯量为</strong> 4Φ 。<br>根据上面的计算图，我们也易知， Φ = b✖️s✖️h。</p>
 
         <!-- 分类文章 -->
         

@@ -452,6 +452,22 @@
 <li>提升带宽利用率。当GPU数量上升，GPU间的通讯次数也上升，每次的通讯量可能下降（但总通讯量不会变）。数据切片小了，就不能很好利用带宽了。所以这个buffer起到了积攒数据的作用：等数据积攒到一定大小，再进行通讯。</li>
 <li>使得存储大小可控。在每次通讯前，积攒的存储大小是常量，是已知可控的。更方便使用者对训练中的存储消耗和通讯时间进行预估。</li>
 </ul>
+<p><strong>M<del>D</del>:Memory Defragmentation</strong></p>
+<p>在前文提过，设置机制，对碎片化的存储空间进行重新整合，整出连续的存储空间。防止出现总存储足够，但连续存储不够而引起的存储请求fail。</p>
+<p><strong>2.3.6.ZeRO-Offload与ZeRO-Infinity</strong></p>
+<p>最后，简单介绍一下ZeRO-Offload。它的核心思想是：<strong>显存不够，内存来凑</strong>。如果我把要存储的大头卸载(offload)到CPU上，而把计算部分放到GPU上，<strong>这样比起跨机，是不是能既降显存，也能减少一些通讯压力呢</strong>？<br>ZeRO-Offload的做法是：</p>
+<ul>
+<li><strong>forward和backward计算量高</strong>，因此和它们相关的部分，例如参数W（fp16），activation，就全放入GPU。</li>
+<li><strong>update的部分计算量低</strong>，因此和它相关的部分，全部放入CPU中。例如W(fp32)，optimizer states（fp32）和gradients(fp16)等。</li>
+</ul>
+<p>具体切分如下图：</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/202306251555826.webp" >
+        </sapn>
+      </p>
+<p>ZeRO-infinity也是同理，它们在解决的事情都是：找个除GPU之外的地方，存数据。感兴趣的朋友可以深入研究，这里就不展开了。</p>
 
         <!-- 分类文章 -->
         

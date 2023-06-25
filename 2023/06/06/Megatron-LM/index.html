@@ -352,6 +352,21 @@
            data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/202306201206441.png" >
         </sapn>
       </p>
+<p>因为采用了Adam优化，所以才会出现momentum和variance，当然你也可以选择别的优化办法。因此这里为了更通用些，记模型必存的数据大小为 KΦ 。因此最终内存开销为： 2Φ+2Φ+KΦ</p>
+<p>另外，这里暂时不将activation纳入统计范围，原因是：</p>
+<ul>
+<li>activation不仅与模型参数相关，还与batch size相关。</li>
+<li>activation的存储不是必须的。存储activation只是为了在用链式法则做backward的过程中，计算梯度更快一些。但你永远可以通过只保留最初的输入X，重新做forward来得到每一层的activation（虽然实际中并不会这么极端）。</li>
+<li>因为activation的这种灵活性，纳入它后不方便衡量系统性能随模型增大的真实变动情况。因此在这里不考虑它，在后面会单开一块说明对activation的优化。</li>
+</ul>
+<p><strong>2.3.4.ZeRO-DP</strong></p>
+<p>知道了什么东西会占存储，以及它们占了多大的存储之后，我们就可以来谈如何优化存储了。注意到，在整个训练中，有很多states并不会每时每刻都用到，举例来说；</p>
+<ul>
+<li>Adam优化下的optimizer states只在最终做update时才用到</li>
+<li>数据并行中，gradients只在最后做AllReduce和updates时才用到</li>
+<li>参数W只在做forward和backward的那一刻才用到</li>
+<li>诸如此类</li>
+</ul>
 
         <!-- 分类文章 -->
         

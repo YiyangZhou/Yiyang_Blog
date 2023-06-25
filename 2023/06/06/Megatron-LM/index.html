@@ -367,6 +367,91 @@
 <li>参数W只在做forward和backward的那一刻才用到</li>
 <li>诸如此类</li>
 </ul>
+<p>所以看到了并不是所有东西在任何地方都会马上用到的，ZeRO的思想：<strong>如果数据算完即废，等需要的时候，我再想办法从个什么地方拿回来，那不就省了一笔存储空间吗？</strong></p>
+<p><strong>P<del>os</del>:优化状态分割</strong></p>
+<p>首先，从 optimizer state开始优化。将optimizer state分成若干份，每块GPU上各自维护一份。这样就减少了相当一部分的显存开销。如下图：</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/202306251513237.webp" >
+        </sapn>
+      </p>
+<p>复习一下，此时W=fp16，G=fp16，O=fp32。此时，整体数据并行的流程如下：</p>
+<p>（1）每块GPU上存一份完整的参数W。将一个batch的数据分成3份，每块GPU各吃一份，做完一轮foward和backward后，各得一份梯度。</p>
+<p>（2）对梯度做一次<strong>AllReduce</strong>，<strong>得到完整的梯度G</strong>，产生单卡通讯量 2Φ 。为了表达简明，这里通讯量我们就不再换算成byte了，而直接根据参数量来计算。</p>
+<p>（3）得到完整梯度G，就可以对W做更新。我们知道W的更新由optimizer states和梯度共同决定。<strong>由于每块GPU上只保管部分optimizer states，因此只能将相应的W（蓝色部分）进行更新</strong>。（2）和（3）可以用下图表示：</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/202306251514839.webp" >
+        </sapn>
+      </p>
+<p>（4）此时，每块GPU上都有部分W没有完成更新（图中白色部分）。所以我们需要对W做一次<strong>All-Gather</strong>，从别的GPU上把更新好的部分W取回来。产生单卡通讯量 Φ 。</p>
+<p>做完P<del>os</del>后，设GPU个数为N<del>d</del>，显存和通讯量的情况如下：</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/202306251518938.webp" >
+        </sapn>
+      </p>
+<p>这么一看通过变成1.5倍的单卡通讯量可以使得存储的显存降低四倍。</p>
+<p><strong>P<del>os</del>+P<del>g</del>:优化状态与梯度分割</strong></p>
+<p>因为之前的P<del>os</del>是通过AllReduce得到了整个梯度G，现在通过把梯度也拆开降低显存消耗：</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/202306251522300.webp" >
+        </sapn>
+      </p>
+<p>此时，数据并行的整体流程如下：<br>（1）每块GPU上存一份完整的参数W。将一个batch的数据分成3份，每块GPU各吃一份，做完一轮foward和backward后，<strong>算得一份完整的梯度（下图中绿色+白色）</strong>。<br>（2）对梯度做一次<strong>Reduce-Scatter</strong>，保证每个GPU上所维持的那块梯度是聚合梯度。例如对GPU1，它负责维护G1，因此其他的GPU只需要把G1对应位置的梯度发给GPU1做加总就可。汇总完毕后，白色块对GPU无用，可以从显存中移除。单卡通讯量 Φ 。（1）和（2）见下图：</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/202306251524089.webp" >
+        </sapn>
+      </p>
+<p>（3）每块GPU用自己对应的O和G去更新相应的W。更新完毕后，<strong>每块GPU维持了一块更新完毕的W</strong>。同理，对W做一次<strong>All-Gather</strong>，将别的GPU算好的W同步到自己这来。单卡通讯量 Φ <strong>。</strong></p>
+<p>再次比对下显存和通讯量：</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/202306251525663.webp" >
+        </sapn>
+      </p>
+<p><strong>P<del>os</del>+P<del>g</del>+P<del>p</del>:优化状态、梯度与参数分割</strong></p>
+<p>现在要将参数一起分割了</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/202306251529011.webp" >
+        </sapn>
+      </p>
+<p>数据并行的流程如下：<br>（1）每块GPU上只保存部分参数W。将一个batch的数据分成3份，每块GPU各吃一份。<br>（2）做forward时，对W做一次<strong>All-Gather</strong>，取回分布在别的GPU上的W，得到一份完整的W，单卡通讯量 Φ <strong>。forward做完，立刻把不是自己维护的W抛弃。</strong><br>（3）做backward时，对W做一次<strong>All-Gather</strong>，取回完整的W，单卡通讯量 Φ <strong>。backward做完，立刻把不是自己维护的W抛弃。</strong><br>（4）做完backward，算得一份完整的梯度G，对G做一次<strong>Reduce-Scatter</strong>，从别的GPU上聚合自己维护的那部分梯度，单卡通讯量 Φ <strong>。聚合操作结束后，立刻把不是自己维护的G抛弃</strong>。<br>（5）用自己维护的O和G，更新W。由于只维护部分W，因此无需再对W做任何AllReduce操作。</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/202306251531257.webp" >
+        </sapn>
+      </p>
+<p>到这一步，<strong>我们用1.5倍的通讯开销，换回近120倍的显存</strong>。只要梯度计算和异步更新做的好，通讯时间大部分可以被计算时间隐藏，因此这样的额外通讯开销，也是划算的。</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/202306251534184.webp" >
+        </sapn>
+      </p>
+<p><strong>ZeRO VS 模型并行</strong></p>
+<p>知道模型并行的朋友，可能会想，既然ZeRO都把参数W给切了，那它应该是个模型并行呀？为什么要归到数据并行里呢？<br>其实<strong>ZeRO是模型并行的形式，数据并行的实质</strong>。<br>模型并行，是指在forward和backward的过程中，我只需要用自己维护的那块W来计算就行。即<strong>同样的输入X，每块GPU上各算模型的一部分，最后通过某些方式聚合结果</strong>。<br>但对ZeRO来说，它做forward和backward的时候，是需要把各GPU上维护的W聚合起来的，即本质上还是用完整的W进行计算。<strong>它是不同的输入X，完整的参数W，最终再做聚合</strong>。</p>
+<p><strong>2.3.5.ZeRO-R</strong></p>
+<p>现在做对residual states的优化</p>
+<p><strong>P<del>a</del>:Partitioned Activation Checkpointing</strong></p>
+<p>activation对显存的占用一般会远高于模型本身，通讯量也是巨大的，所以这块要灵活、有效地实验设计。</p>
+<p><strong>C<del>B</del>:Constant Size Buffer</strong></p>
+<p>固定大小的内存buffer，它的目的在于：</p>
+<ul>
+<li>提升带宽利用率。当GPU数量上升，GPU间的通讯次数也上升，每次的通讯量可能下降（但总通讯量不会变）。数据切片小了，就不能很好利用带宽了。所以这个buffer起到了积攒数据的作用：等数据积攒到一定大小，再进行通讯。</li>
+<li>使得存储大小可控。在每次通讯前，积攒的存储大小是常量，是已知可控的。更方便使用者对训练中的存储消耗和通讯时间进行预估。</li>
+</ul>
 
         <!-- 分类文章 -->
         

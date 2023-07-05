@@ -166,6 +166,7 @@
 <p>​        PandaLM [✅]</p>
 <p>​        How Language Model Hallucinations Can Snowball [✅]</p>
 <p>​        Evaluating Object Hallucination in Large Vision-Language Models [✅]    </p>
+<p>​        Visual Programming for Text-to-Image Generation and Evaluation [✅]</p>
 <hr>
 <p><strong>（6）幻觉相关工作：</strong></p>
 <p>​        ALIGNSCORE: Evaluating Factual Consistenc with A Unified Alignment Function [✅]</p>
@@ -178,6 +179,7 @@
 <p>​        Exposing and Mitigating Spurious Correlations for Cross-Modal Retrieval [✅]</p>
 <p>​        Trusting Your Evidence:Hallucinate Less with Context-aware Decoding [✅]</p>
 <p>​        How Language Model Hallucinations Can Snowball [✅]</p>
+<p>​        Inference-Time Intervention: Eliciting Truthful Answers from a Language Model [✅]</p>
 <h2 id="2-文献阅读笔记"><a href="#2-文献阅读笔记" class="headerlink" title="2.文献阅读笔记"></a>2.文献阅读笔记</h2><h3 id="2-1-Prophet"><a href="#2-1-Prophet" class="headerlink" title="2.1.Prophet"></a>2.1.Prophet</h3><blockquote>
 <p>本文指出早期用外部知识库来引导回答图片问题KB-VQA任务，外部知识的一些无关信息可能会造成误导。本文提出了用VQA模型生成一系列针对图片的指导信息，然后用这些构造成prompt去指导文本GPT生成答案。</p>
 </blockquote>
@@ -533,6 +535,38 @@
         </sapn>
       </p>
 <p>总体来说就是<strong>能在见过的能力表现好，但是不全面，有些任务甚至会下降。同时主要模仿了GPT的说话方式，并没有太模仿内容（简而言之就是这些模仿的模型自信满满的讲出了一堆屁话）</strong>，同时在微调过程中，甚至要避免引入新的知识，否则模型可能会猜测或虚构答案，而不是按照预期执行任务。</p>
+<h3 id="2-13-Visual-Programming-for-Text-to-Image-Generation-and-Evaluation"><a href="#2-13-Visual-Programming-for-Text-to-Image-Generation-and-Evaluation" class="headerlink" title="2.13.Visual Programming for Text-to-Image Generation and Evaluation"></a>2.13.Visual Programming for Text-to-Image Generation and Evaluation</h3><blockquote>
+<p>本文提出了一个VPGEN，一个可解释的逐步T2I生成框架，将T2I生成分解为三个步骤：对象/计数生成、布局生成和图像生成。然后引入了VPEVAL，一个可解释和可解释的T2I生成评估框架，基于视觉编程。</p>
+</blockquote>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/202307051510469.png" >
+        </sapn>
+      </p>
+<p>研究提出了两种新颖的可解释/可解释的视觉编程(VP)框架，将LLMs和视觉模块结合起来进行T2I生成和评估。作者使用了Vicuna，通过在多个数据集的文本-布局对上进行微调来处理前两个步骤(对象/计数生成和布局生成)，从而改进了T2I生成的布局控制。对于最后的图像生成步骤，我们使用现成的布局到图像生成模型，例如GLIGEN。我们的生成框架提供了比广泛使用的端到端T2I模型更可解释的空间控制能力。</p>
+<p>其次本文提出了VPEVAL，一个新的可解释/可解释的T2I评估框架，基于评估程序调用不同的视觉模块来评估不同的T2I技能，并提供视觉+文本的评估结果解释。</p>
+<p>本文的VPGEN的前两步骤生成对象计数和布局都用Vicuna 13B在Flickr30K，MS COCO 2014和PaintSkills上专门微调过。之后的整体流程就如下：</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/202307051507513.png" >
+        </sapn>
+      </p>
+<p>评估流程：</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/202307051547619.png" >
+        </sapn>
+      </p>
+<p>这个评价体系还是挺全面的，比TIFA靠谱点：</p>
+<p>
+        <span class="lazyload-img-span">
+        <img   
+           data-src="https://raw.githubusercontent.com/YiyangZhou/imageBeds/main/imgs/202307051550455.png" >
+        </sapn>
+      </p>
 
         <!-- 分类文章 -->
         
